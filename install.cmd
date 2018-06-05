@@ -22,6 +22,7 @@ for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
     echo %%i=%%j>>%_CONF_NEW%
     set _FOUND_REMOTE=%%j
     set _FOUND_ATTACH=
+    echo Found new remote server
     echo   Server address: %%j
   ) else if %%i==ATTACH (
     if defined _FOUND_REMOTE (
@@ -102,7 +103,7 @@ goto :EOF
 if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=%~1
 if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USB-Over-IP Service
 echo Current ServiceName is "%CFG_SERVICE_NAME%".
-set /p CFG_SERVICE_NAME="Type new name (leave empty to keep current value):"
+set /p CFG_SERVICE_NAME="Type new Service Name (leave empty to keep current value):"
 echo SERVICE_NAME=%CFG_SERVICE_NAME%>>%_CONF_NEW%
 goto :EOF
 
