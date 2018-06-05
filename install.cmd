@@ -20,7 +20,7 @@ for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
   ) else if %%i==REMOTE (
     if defined _FOUND_REMOTE call :new_attach
     echo %%i=%%j>>%_CONF_NEW%
-    set _FOUND_REMOTE=1
+    set _FOUND_REMOTE=%%j
     set _FOUND_ATTACH=
     echo   Server address: %%j
   ) else if %%i==ATTACH (
@@ -48,13 +48,42 @@ echo Done. You now must have everything working.
 
 goto :EOF
 
-:service_name
-if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=%~1
-if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USB-Over-IP Service
-echo Current ServiceName is "%CFG_SERVICE_NAME%".
-set /p CFG_SERVICE_NAME="Type new name (leave empty to keep current value):"
-echo SERVICE_NAME=%CFG_SERVICE_NAME%>>%_CONF_NEW%
-goto :EOF
+:new_remote
+if not defined _FOUND_REMOTE (
+  call :ask "Do you want to add a remote host? (Y/n)" y
+) else (
+  call :ask "Do you want to add more remote hosts? (y/N)" n
+)
+if /i "%_ANSWER%" == "n" goto :EOF
+
+set _FOUND_REMOTE=
+set /p _FOUND_REMOTE="Type in the host name/IP:"
+if /i not "%_FOUND_REMOTE%" == "" (
+  set _FOUND_ATTACH=
+  echo REMOTE=%_FOUND_REMOTE%>>%_CONF_NEW%
+  echo Added host %_FOUND_REMOTE%.
+)
+call :new_attach
+goto new_remote
+
+:new_attach
+if not defined _FOUND_ATTACH (
+  call :ask "Do you want to add ports to this remote? (Y/n)" y
+) else (
+  call :ask "Do you want to add more ports to this remote? (y/N)" n
+)
+if /i "%_ANSWER%" == "n" goto :EOF
+
+echo Looking up for available devices...
+"%~dp0usbip" -l %_FOUND_REMOTE%
+
+set /p _ANSWER="Type in the bus_id:"
+if /i not "%_ANSWER%" == "" (
+  set _FOUND_ATTACH=1
+  echo ATTACH=%_ANSWER%>>%_CONF_NEW%
+  echo Added port with bus_id %_ANSWER%.
+)
+goto new_attach
 
 :save_config
 call :ask "Done with config. Save it? (Y/n)" y
@@ -69,6 +98,14 @@ echo Installing the drivers...
 pnputil -i -a USBIPEnum.inf 
 goto :EOF
 
+:service_name
+if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=%~1
+if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USB-Over-IP Service
+echo Current ServiceName is "%CFG_SERVICE_NAME%".
+set /p CFG_SERVICE_NAME="Type new name (leave empty to keep current value):"
+echo SERVICE_NAME=%CFG_SERVICE_NAME%>>%_CONF_NEW%
+goto :EOF
+
 :install_service
 call :ask "Install the service? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
@@ -78,40 +115,6 @@ nssm install "%CFG_SERVICE_NAME%" "%~dp0attach.cmd"
 nssm start "%CFG_SERVICE_NAME%"
 
 goto :EOF
-
-:new_remote
-if not defined _FOUND_REMOTE (
-  call :ask "Do you want to add a remote host? (Y/n)" y
-) else (
-  call :ask "Do you want to add more remote hosts? (y/N)" n
-)
-if /i "%_ANSWER%" == "n" goto :EOF
-
-set /p _ANSWER="Type in the host name/IP:"
-if /i not "%_ANSWER%" == "" (
-  set _FOUND_REMOTE=1
-  set _FOUND_ATTACH=
-  echo REMOTE=%_ANSWER%>>%_CONF_NEW%
-  echo Added host %_ANSWER%.
-)
-call :new_attach
-goto new_remote
-
-:new_attach
-if not defined _FOUND_ATTACH (
-  call :ask "Do you want to add ports to this remote? (Y/n)" y
-) else (
-  call :ask "Do you want to add more ports to this remote? (y/N)" n
-)
-if /i "%_ANSWER%" == "n" goto :EOF
-
-set /p _ANSWER="Type in the bus_id:"
-if /i not "%_ANSWER%" == "" (
-  set _FOUND_ATTACH=1
-  echo ATTACH=%_ANSWER%>>%_CONF_NEW%
-  echo Added port with bus_id %_ANSWER%.
-)
-goto new_attach
 
 :ask 
 set _ANSWER=%~2
