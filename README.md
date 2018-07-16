@@ -3,7 +3,7 @@ About
 This is a Windows Client for USBIP v2.0. It contains drivers, executables and scripts to install it as a service.
 
 Usage: 
-1. Copy it to any folder.
+1. [Download](https://github.com/barbalion/usbip-win-client/archive/master.zip) and extract it to any folder.
 1. Run `install.cmd` with Administrator privileges. 
 1. Answer the questions. 
 1. Done.
