@@ -1,5 +1,6 @@
 @echo off
 set _USBIP="%~dp0usbip.exe"
+set _SVCCTL="%~dp0nssm.exe"
 set _CONF="%~dp0usbip.conf"
 set _PARSING=1
 if not exist %_CONF% goto not_configred

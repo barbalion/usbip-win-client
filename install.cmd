@@ -112,8 +112,8 @@ call :ask "Install the service? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Installing the service...
-nssm install "%CFG_SERVICE_NAME%" "%~dp0attach.cmd"
-nssm start "%CFG_SERVICE_NAME%"
+%_SVCCTL% install "%CFG_SERVICE_NAME%" "%~dp0attach.cmd"
+%_SVCCTL% start "%CFG_SERVICE_NAME%"
 
 goto :EOF
 
