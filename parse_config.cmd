@@ -1,4 +1,4 @@
-@echo off
+rem @echo off
 set _USBIP="%~dp0usbip.exe"
 set _SVCCTL="%~dp0nssm.exe"
 set _CONF="%~dp0usbip.conf"

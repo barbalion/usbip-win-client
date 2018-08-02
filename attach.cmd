@@ -1,6 +1,6 @@
 @echo off
 set _ATTACH_CMD="%~f0"
-set _END_CMD=pause
+set _END_CMD="%~dp0check.cmd" 3
 if not defined _PARSING "%~dp0parse_config.cmd"
 if errorlevel 1 goto :EOF
 

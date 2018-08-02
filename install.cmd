@@ -1,7 +1,8 @@
 @echo off
 set _CONF=usbip.conf
 set _CONF_FILE="%~dp0%_CONF%"
-set _CONF_NEW=usbip.conf_new
+set _CONF_NEW="%~dp0%_CONF%_new"
+set _SVCCTL="%~dp0nssm.exe"
 echo Looking for existing config...
 if not exist %_CONF_FILE% (
   Echo Creating new usbip.conf...
@@ -42,10 +43,22 @@ if defined _FOUND_REMOTE call :new_attach
 call :new_remote
 
 call :save_config
+rem call :install_certificate
 call :install_drivers
 call :install_service
 
-echo Done. You now must have everything working.
+echo Looking for active ports...
+"%~dp0usbip" -p
+if errorlevel 1 (
+  echo Looks not working :(
+  echo Try to install the certificate and the driver manually.
+  pause
+  explorer /select,"%~dp0USBIPEnum.inf"
+  explorer /select,"%~dp0USBIP_TestCert.pfx"
+) else (
+  echo Done. You now must have everything working.
+  pause
+)
 
 goto :EOF
 
@@ -92,11 +105,19 @@ if /i "%_ANSWER%" == "n" goto :EOF
 move /y %_CONF_NEW% %_CONF%
 goto :EOF
 
+:install_certificate
+call :ask "Install the test certificate for the driver? (Y/n)" y
+if /i "%_ANSWER%" == "n" goto :EOF
+"%~dp0certmgr.exe" /add /all "%~dp0USBIP_TestCert.pfx" /s /r localMachine root
+if errorlevel 1 goto error
+goto :EOF
+
 :install_drivers
 call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
-pnputil -i -a USBIPEnum.inf 
+pnputil -i -a "%~dp0USBIPEnum.inf"
+if errorlevel 1 goto error
 goto :EOF
 
 :service_name
@@ -113,8 +134,9 @@ if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Installing the service...
 %_SVCCTL% install "%CFG_SERVICE_NAME%" "%~dp0attach.cmd"
+if errorlevel 1 goto error
 %_SVCCTL% start "%CFG_SERVICE_NAME%"
-
+if errorlevel 1 goto error
 goto :EOF
 
 :ask 
@@ -133,3 +155,8 @@ if /i "%_ANSWER%" == "" if not "%~2" == "" (
   goto :EOF
 )
 goto ask 
+
+:error
+echo Error occured!
+pause
+exit /b 1
