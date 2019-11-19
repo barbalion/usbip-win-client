@@ -8,7 +8,7 @@ Usage:
 1. Answer the questions. 
 1. Done.
 
-Tested in Windows 8.1 and Windows 10.
+Tested in Windows 8.1 and Windows 10 (with disabled driver signature enforcement only).
 
 Driver
 ----------
