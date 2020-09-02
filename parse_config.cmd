@@ -13,7 +13,6 @@ for /f "tokens=1,2 delims== eol=#" %%i in ('type %_CONF%') do (
 if "%CFG_REMOTE%" == "" goto no_remote
 if "%CFG_ATTACH%" == "" goto nothing_todo
 call call %_END_CMD%
-echo Done!
 goto :EOF
 :not_configred
 echo Error: Config not found! Run 'install.cmd' first.

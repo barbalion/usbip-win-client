@@ -7,7 +7,6 @@ if not "%~1" == "" (
   ping localhost -n %~1 > nul
 )
 
+%_SVCCTL% status "%CFG_SERVICE_NAME%"
 %_USBIP% list -l 
-rem  find "port"
-
 pause

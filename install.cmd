@@ -52,13 +52,13 @@ call :install_service
 echo Looking for active ports...
 call "%~dp0check.cmd"
 if errorlevel 1 (
-  echo Looks not working :(
+  echo WARNING: It looks not working :(
   echo Try to install the certificate and the driver manually.
   pause
-  explorer /select,"%~dp0USBIPEnum.inf"
-  explorer /select,"%~dp0USBIP_TestCert.pfx"
+  explorer /select,"%~dp0usbip_vhci_ude.inf"
+  explorer /select,"%~dp0usbip_test.pfx"
 ) else (
-  echo Done. You now must have everything working.
+  echo Done. You now must have everything working. Press any key to exit.
   pause
 )
 
