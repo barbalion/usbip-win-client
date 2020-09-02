@@ -108,7 +108,8 @@ goto :EOF
 :install_certificate
 call :ask "Install the test certificate for the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
-"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine root
+"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine ROOT
+"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine TRUSTEDPUBLISHER
 if errorlevel 1 goto error
 goto :EOF
 
