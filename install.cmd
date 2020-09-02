@@ -7,10 +7,10 @@ set _CONF_NEW="%~dp0%_CONF%_new"
 set _SVCCTL="%~dp0nssm.exe"
 echo Looking for existing config...
 if not exist %_CONF_FILE% (
-  Echo Creating new usbip.conf...
+  echo Creating new usbip.conf...
   type nul > %_CONF_FILE%
 ) else (
-  Echo Found %_CONF%. Reading:
+  echo Found %_CONF%. Reading:
 ) 
 type nul > %_CONF_NEW%
 for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
@@ -18,32 +18,40 @@ for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
    if defined CFG_SERVICE_NAME (
       echo Warning: SERVICE_NAME appeared again! Ignoring... 
     ) else (
-      call :service_name "%%j"
+      set CFG_SERVICE_NAME=%%j
     )
-  ) else if %%i==REMOTE (
+  ) else if %%i==UDE (
+    set CFG_UDE=%%j
+  )
+)
+
+if not defined CFG_SERVICE_NAME call :service_name
+>> %_CONF_NEW% echo SERVICE_NAME=%CFG_SERVICE_NAME%
+if not defined CFG_UDE call :ask_ude
+>> %_CONF_NEW% echo UDE=%CFG_UDE%
+if a%CFG_UDE% == a0 (set _UDE=) else (set _UDE=_ude)
+
+for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
+  if %%i==REMOTE (
     if defined _FOUND_REMOTE call :new_attach
-    echo %%i=%%j>>%_CONF_NEW%
+    >> %_CONF_NEW% echo %%i=%%j
     set _FOUND_REMOTE=%%j
     set _FOUND_ATTACH=
-    echo Found new remote server
+    echo Found configured remote server
     echo   Server address: %%j
   ) else if %%i==ATTACH (
     if defined _FOUND_REMOTE (
-      echo %%i=%%j>>%_CONF_NEW%
+      >> %_CONF_NEW% echo %%i=%%j
     ) else (
       echo Warning: Ignoring orphaned %%i=%%j
     )
     set _FOUND_ATTACH=1
-    echo      Bus_Id: %%j
-  ) else (
-    echo %%i %%j
+    echo      Found configured attachment to Bus_Id: %%j
   )
 )
-if not defined CFG_SERVICE_NAME call :service_name
-if not defined _FOUND_REMOTE call :new_remote
+
 if defined _FOUND_REMOTE call :new_attach
 call :new_remote
-
 call :save_config
 call :install_certificate
 call :install_drivers
@@ -55,7 +63,7 @@ if errorlevel 1 (
   echo WARNING: It looks not working :(
   echo Try to install the certificate and the driver manually.
   pause
-  explorer /select,"%~dp0usbip_vhci_ude.inf"
+  explorer /select,"%~dp0usbip_vhci%_UDE%.inf"
   explorer /select,"%~dp0usbip_test.pfx"
 ) else (
   echo Done. You now must have everything working. Press any key to exit.
@@ -73,10 +81,10 @@ if not defined _FOUND_REMOTE (
 if /i "%_ANSWER%" == "n" goto :EOF
 
 set _FOUND_REMOTE=
-set /p _FOUND_REMOTE="Type in the host name/IP:"
+set /p _FOUND_REMOTE="Type in the host name/IP: "
 if /i not "%_FOUND_REMOTE%" == "" (
   set _FOUND_ATTACH=
-  echo REMOTE=%_FOUND_REMOTE%>>%_CONF_NEW%
+  >> %_CONF_NEW% echo REMOTE=%_FOUND_REMOTE%
   echo Added host %_FOUND_REMOTE%.
 )
 call :new_attach
@@ -91,12 +99,12 @@ if not defined _FOUND_ATTACH (
 if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Looking up for available devices...
-"%~dp0usbip" -l %_FOUND_REMOTE%
+"%~dp0usbip.exe" list -r %_FOUND_REMOTE%
 
-set /p _ANSWER="Type in the bus_id:"
+set /p _ANSWER="Type in the bus_id to add: "
 if /i not "%_ANSWER%" == "" (
   set _FOUND_ATTACH=1
-  echo ATTACH=%_ANSWER%>>%_CONF_NEW%
+  >> %_CONF_NEW% echo ATTACH=%_ANSWER%
   echo Added port with bus_id %_ANSWER%.
 )
 goto new_attach
@@ -119,24 +127,27 @@ goto :EOF
 call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
-usbip.exe install_ude
-rem pnputil -i -a "%~dp0usbip_vhci_ude.inf"
+"%~dp0usbip.exe" install%_UDE%
 if errorlevel 1 goto error
 goto :EOF
 
 :service_name
-if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=%~1
 if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USB-Over-IP Service
 echo Current ServiceName is "%CFG_SERVICE_NAME%".
-set /p CFG_SERVICE_NAME="Type new Service Name (leave empty to keep current value):"
-echo SERVICE_NAME=%CFG_SERVICE_NAME%>>%_CONF_NEW%
+set /p _ANSWER="Type new Service Name (leave empty to keep it): "
+if not "%_ANSWER%" == "" set CFG_SERVICE_NAME%=%_ANSWER%
+goto :EOF
+
+:ask_ude
+call :ask "Do you want to use UDE driver (default, newer one. Choose 'No' to fallback to the old driver if you experience any trouble with new UDE driver)? (Y/n)" y
+if /i "%_ANSWER%" == "n" (set CFG_UDE=0) else (set CFG_UDE=1)
 goto :EOF
 
 :install_service
 call :ask "Install the service? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 
-echo Installing the service...
+echo Installing the service "%CFG_SERVICE_NAME%"...
 %_SVCCTL% install "%CFG_SERVICE_NAME%" "%~dp0attach.cmd"
 if errorlevel 1 goto error
 %_SVCCTL% start "%CFG_SERVICE_NAME%"
@@ -145,7 +156,7 @@ goto :EOF
 
 :ask 
 set _ANSWER=%~2
-set /p _ANSWER="%~1"
+set /p _ANSWER="%~1: "
 if /i "%_ANSWER%" == "y" (
   set _ANSWER=y
   goto :EOF
