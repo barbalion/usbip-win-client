@@ -43,12 +43,12 @@ if defined _FOUND_REMOTE call :new_attach
 call :new_remote
 
 call :save_config
-rem call :install_certificate
+call :install_certificate
 call :install_drivers
 call :install_service
 
 echo Looking for active ports...
-"%~dp0usbip" -p
+call "%~dp0check.cmd"
 if errorlevel 1 (
   echo Looks not working :(
   echo Try to install the certificate and the driver manually.
@@ -108,7 +108,7 @@ goto :EOF
 :install_certificate
 call :ask "Install the test certificate for the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
-"%~dp0certmgr.exe" /add /all "%~dp0USBIP_TestCert.pfx" /s /r localMachine root
+"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine root
 if errorlevel 1 goto error
 goto :EOF
 
@@ -116,7 +116,8 @@ goto :EOF
 call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
-pnputil -i -a "%~dp0USBIPEnum.inf"
+usbip.exe install_ude
+rem pnputil -i -a "%~dp0usbip_vhci_ude.inf"
 if errorlevel 1 goto error
 goto :EOF
 

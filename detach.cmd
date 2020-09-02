@@ -6,4 +6,4 @@ if errorlevel 1 goto :EOF
 
 set /a _I=_I+1
 echo Detaching port %_I%...
-%_USBIP% -d %_I%
+%_USBIP% detach -p %_I%
