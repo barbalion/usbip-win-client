@@ -89,7 +89,7 @@ if not defined _FOUND_ATTACH (
 if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Looking up for available devices...
-"%~dp0usbip" -l %_FOUND_REMOTE%
+"%~dp0usbip" list -r %_FOUND_REMOTE%
 
 set /p _ANSWER="Type in the bus_id:"
 if /i not "%_ANSWER%" == "" (
