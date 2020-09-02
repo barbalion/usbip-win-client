@@ -1,4 +1,6 @@
 @echo off
+net.exe session 1>NUL 2>NUL || (Echo This script requires elevated rights. Run it as Administrator. & pause & Exit /b 1)
+
 set _CONF=usbip.conf
 set _CONF_FILE="%~dp0%_CONF%"
 set _CONF_NEW="%~dp0%_CONF%_new"
