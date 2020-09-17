@@ -34,19 +34,9 @@ if a%CFG_UDE% == a0 (set _UDE=) else (set _UDE=_ude)
 for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
   if %%i==REMOTE (
     if defined _FOUND_REMOTE call :new_attach
-    >> %_CONF_NEW% echo %%i=%%j
-    set _FOUND_REMOTE=%%j
-    set _FOUND_ATTACH=
-    echo Found configured remote server
-    echo   Server address: %%j
+    call :found_remote "%%i" "%%j"
   ) else if %%i==ATTACH (
-    if defined _FOUND_REMOTE (
-      >> %_CONF_NEW% echo %%i=%%j
-    ) else (
-      echo Warning: Ignoring orphaned %%i=%%j
-    )
-    set _FOUND_ATTACH=1
-    echo      Found configured attachment to Bus_Id: %%j
+    call :found_attach "%%i" "%%j"
   )
 )
 
@@ -72,6 +62,17 @@ if errorlevel 1 (
 
 goto :EOF
 
+:found_remote
+set _FOUND_REMOTE=
+echo Found configured remote server
+echo   Server address: %2
+call :ask "Do you want to continue using this host? (Y/n)" y
+if /i "%_ANSWER%" == "n" goto :EOF
+set _FOUND_REMOTE=%~2
+set _FOUND_ATTACH=
+>> %_CONF_NEW% echo %~1=%~2
+goto :EOF
+
 :new_remote
 if not defined _FOUND_REMOTE (
   call :ask "Do you want to add a remote host? (Y/n)" y
@@ -89,6 +90,20 @@ if /i not "%_FOUND_REMOTE%" == "" (
 )
 call :new_attach
 goto new_remote
+
+:found_attach
+set _FOUND_ATTACH=
+if not defined _FOUND_REMOTE (
+  echo      Warning: Ignoring orphaned %~1=%~2
+  goto :EOF
+)
+echo      Found configured attachment to Bus_Id: %~2
+call :ask "Do you want to continue using this attachment? (Y/n)" y
+if /i "%_ANSWER%" == "n" goto :EOF
+set _FOUND_ATTACH=1
+>> %_CONF_NEW% echo %~1=%~2
+goto :EOF
+
 
 :new_attach
 if not defined _FOUND_ATTACH (
