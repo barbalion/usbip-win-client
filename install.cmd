@@ -5,44 +5,30 @@ set _CONF=usbip.conf
 set _CONF_FILE="%~dp0%_CONF%"
 set _CONF_NEW="%~dp0%_CONF%_new"
 set _SVCCTL="%~dp0nssm.exe"
-echo Looking for existing config...
+set _USPIP_EXE="%~dp0usbip.exe"
+set _USPIP_CERT="%~dp0usbip_test.pfx"
+set _CERTMGR="%~dp0certmgr.exe"
+
+echo Looking for the config...
 if not exist %_CONF_FILE% (
-  echo Creating new usbip.conf...
+  echo Config is not found. Creating new "%_CONF%"...
   type nul > %_CONF_FILE%
-) else (
-  echo Found %_CONF%. Reading:
+  set _NEED_CONFIG=1
+  call :general_config
+  goto do_config
 ) 
-type nul > %_CONF_NEW%
-for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
-  if %%i==SERVICE_NAME (
-   if defined CFG_SERVICE_NAME (
-      echo Warning: SERVICE_NAME appeared again! Ignoring... 
-    ) else (
-      set CFG_SERVICE_NAME=%%j
-    )
-  ) else if %%i==UDE (
-    set CFG_UDE=%%j
-  )
+
+echo Found existing "%_CONF%".
+call :general_config
+if defined _NEED_CONFIG goto do_config
+call :ask "Do you want to rewise it? (y/N)" n
+if /i "%_ANSWER%" == "y" set _NEED_CONFIG=1
+
+:do_config
+if defined _NEED_CONFIG (
+  call :config_remotes
+  call :save_config
 )
-
-if not defined CFG_SERVICE_NAME call :service_name
->> %_CONF_NEW% echo SERVICE_NAME=%CFG_SERVICE_NAME%
-if not defined CFG_UDE call :ask_ude
->> %_CONF_NEW% echo UDE=%CFG_UDE%
-if a%CFG_UDE% == a0 (set _UDE=) else (set _UDE=_ude)
-
-for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
-  if %%i==REMOTE (
-    if defined _FOUND_REMOTE call :new_attach
-    call :found_remote "%%i" "%%j"
-  ) else if %%i==ATTACH (
-    call :found_attach "%%i" "%%j"
-  )
-)
-
-if defined _FOUND_REMOTE call :new_attach
-call :new_remote
-call :save_config
 call :install_certificate
 call :install_drivers
 call :install_service
@@ -54,11 +40,55 @@ if errorlevel 1 (
   echo Try to install the certificate and the driver manually.
   pause
   explorer /select,"%~dp0usbip_vhci%_UDE%.inf"
-  explorer /select,"%~dp0usbip_test.pfx"
+  explorer /select,%_USPIP_CERT%
 ) else (
   echo Done. You now must have everything working. Press any key to exit.
   pause
 )
+
+call :clean
+goto :EOF
+
+:general_config
+type nul > %_CONF_NEW%
+for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
+  if %%i==SERVICE_NAME (
+   if defined CFG_SERVICE_NAME (
+      echo Warning: Duplicate SERVICE_NAME="%%j"! Ignoring... 
+    ) else (
+      set CFG_SERVICE_NAME=%%j
+    )
+  ) else if %%i==UDE (
+    set CFG_UDE=%%j
+  )
+)
+
+if not defined CFG_SERVICE_NAME (
+  call :service_name
+  set _NEED_CONFIG=1
+)
+>> %_CONF_NEW% echo SERVICE_NAME=%CFG_SERVICE_NAME%
+if not defined CFG_UDE (
+  call :ask_ude
+  set _NEED_CONFIG=1
+)
+>> %_CONF_NEW% echo UDE=%CFG_UDE%
+if "%CFG_UDE%" == "0" (set _UDE=) else (set _UDE=_ude)
+
+goto :EOF
+
+:config_remotes
+for /f "tokens=1,2 delims== eol=#" %%i in (%_CONF%) do (
+  if %%i==REMOTE (
+    if defined _FOUND_REMOTE call :new_attach
+    call :found_remote "%%i" "%%j"
+  ) else if %%i==ATTACH (
+    call :found_attach "%%i" "%%j"
+  )
+)
+
+if defined _FOUND_REMOTE call :new_attach
+call :new_remote
 
 goto :EOF
 
@@ -114,7 +144,7 @@ if not defined _FOUND_ATTACH (
 if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Looking up for available devices...
-"%~dp0usbip.exe" list -r %_FOUND_REMOTE%
+%_USPIP_EXE% list -r %_FOUND_REMOTE%
 
 set /p _ANSWER="Type in the bus_id to add: "
 if /i not "%_ANSWER%" == "" (
@@ -133,8 +163,8 @@ goto :EOF
 :install_certificate
 call :ask "Install the test certificate for the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
-"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine ROOT
-"%~dp0certmgr.exe" /add /all "%~dp0usbip_test.pfx" /s /r localMachine TRUSTEDPUBLISHER
+%_CERTMGR% /add /all %_USPIP_CERT% /s /r localMachine ROOT
+%_CERTMGR% /add /all %_USPIP_CERT% /s /r localMachine TRUSTEDPUBLISHER
 if errorlevel 1 goto error
 goto :EOF
 
@@ -142,12 +172,12 @@ goto :EOF
 call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
-"%~dp0usbip.exe" install%_UDE%
+%_USPIP_EXE% install%_UDE%
 if errorlevel 1 goto error
 goto :EOF
 
 :service_name
-if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USB-Over-IP Service
+if not defined CFG_SERVICE_NAME set CFG_SERVICE_NAME=USBIPService
 echo Current ServiceName is "%CFG_SERVICE_NAME%".
 set /p _ANSWER="Type new Service Name (leave empty to keep it): "
 if not "%_ANSWER%" == "" set CFG_SERVICE_NAME%=%_ANSWER%
@@ -186,7 +216,13 @@ if /i "%_ANSWER%" == "" if not "%~2" == "" (
 )
 goto ask 
 
+:clean
+if exist %_CONF_NEW% del %_CONF_NEW%
+goto :EOF
+
+
 :error
 echo Error occured!
 pause
+call :clean
 exit /b 1
