@@ -1,5 +1,8 @@
 @echo off
-net.exe session 1>NUL 2>NUL || (Echo This script requires elevated rights. Run it as Administrator. & pause & Exit /b 1)
+pushd "%~dp0" && net sess 1>nul 2>nul || (powershell -ex unrestricted -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/c \"%~f0\" %*'" >nul 2>nul & exit /b 1)
+
+call :ask "Do you want to uninstall USPIP service, driver and sertificate? (y/N)" n
+if /i "%_ANSWER%" == "n" goto :EOF
 
 if not defined _PARSING call "%~dp0parse_config.cmd"
 if errorlevel 1 goto clean
@@ -20,3 +23,23 @@ usbip.exe uninstall_ude
 echo Removing the certificate...
 "%~dp0certmgr.exe" /del /all "%~dp0usbip_test.pfx" /s /r localMachine ROOT
 "%~dp0certmgr.exe" /del /all "%~dp0usbip_test.pfx" /s /r localMachine TRUSTEDPUBLISHER
+
+goto :EOF
+
+:ask 
+set _ANSWER=%~2
+set /p _ANSWER="%~1: "
+if /i "%_ANSWER%" == "y" (
+  set _ANSWER=y
+  goto :EOF
+)
+if /i "%_ANSWER%" == "n" (
+  set _ANSWER=n
+  goto :EOF
+)
+if /i "%_ANSWER%" == "" if not "%~2" == "" (
+  set _ANSWER=%~2
+  goto :EOF
+)
+goto ask 
+

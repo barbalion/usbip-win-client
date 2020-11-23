@@ -1,5 +1,5 @@
 @echo off
-net.exe session 1>NUL 2>NUL || (Echo This script requires elevated rights. Run it as Administrator. & pause & Exit /b 1)
+pushd "%~dp0" && net sess 1>nul 2>nul || (powershell -ex unrestricted -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/c \"%~f0\" %*'" >nul 2>nul & exit /b 1)
 
 set _CONF=usbip.conf
 set _CONF_FILE="%~dp0%_CONF%"
@@ -34,7 +34,8 @@ call :install_drivers
 call :install_service
 
 echo Looking for active ports...
-call "%~dp0check.cmd"
+set _PARSING=
+call "%~dp0check_local.cmd"
 if errorlevel 1 (
   echo WARNING: It looks not working :(
   echo Try to install the certificate and the driver manually.
@@ -157,7 +158,7 @@ goto new_attach
 :save_config
 call :ask "Done with config. Save it? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
-move /y %_CONF_NEW% %_CONF%
+move /y %_CONF_NEW% %_CONF_FILE%
 goto :EOF
 
 :install_certificate
@@ -220,9 +221,8 @@ goto ask
 if exist %_CONF_NEW% del %_CONF_NEW%
 goto :EOF
 
-
 :error
 echo Error occured!
-pause
 call :clean
+pause
 exit /b 1

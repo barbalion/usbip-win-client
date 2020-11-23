@@ -1,5 +1,5 @@
 @echo off
-net.exe session 1>NUL 2>NUL || (Echo This script requires elevated rights. Run it as Administrator. & pause & Exit /b 1)
+pushd "%~dp0" && net sess 1>nul 2>nul || (powershell -ex unrestricted -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/c \"%~f0\" %*'" >nul 2>nul & exit /b 1)
 
 call "%~dp0detach.cmd"
 set _END_CMD="%~f0"
@@ -14,4 +14,5 @@ echo Starting the service "%CFG_SERVICE_NAME%"...
 %_SVCCTL% start "%CFG_SERVICE_NAME%"
 echo Waiting 3 sec...
 ping localhost -n 3 > nul
+set _PARSING=
 call "%~dp0check_local.cmd"
