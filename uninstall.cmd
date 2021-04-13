@@ -17,13 +17,15 @@ echo Removing the service "%CFG_SERVICE_NAME%"...
 
 :clean
 echo Uninstalling the driver...
-usbip.exe uninstall
-usbip.exe uninstall_ude
+usbip.exe uninstall -w
+usbip.exe uninstall -u
 
 echo Removing the certificate...
 "%~dp0certmgr.exe" /del /all "%~dp0usbip_test.pfx" /s /r localMachine ROOT
 "%~dp0certmgr.exe" /del /all "%~dp0usbip_test.pfx" /s /r localMachine TRUSTEDPUBLISHER
 
+echo It's all done.
+pause
 goto :EOF
 
 :ask 

@@ -147,7 +147,7 @@ if /i "%_ANSWER%" == "n" goto :EOF
 echo Looking up for available devices...
 %_USPIP_EXE% list -r %_FOUND_REMOTE%
 
-set /p _ANSWER="Type in the bus_id to add: "
+set /p _ANSWER="Type in the bus_id to add (usually looks like '1-1.4' or similar): "
 if /i not "%_ANSWER%" == "" (
   set _FOUND_ATTACH=1
   >> %_CONF_NEW% echo ATTACH=%_ANSWER%
@@ -173,7 +173,11 @@ goto :EOF
 call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
-%_USPIP_EXE% install%_UDE%
+if %_UDE% == 1 (
+  %_USPIP_EXE% install -u %_UDE%
+) else (
+  %_USPIP_EXE% install -w %_UDE%
+)
 if errorlevel 1 goto error
 goto :EOF
 

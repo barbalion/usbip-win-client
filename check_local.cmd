@@ -15,6 +15,9 @@ for /f "delims=() tokens=1,2" %%i in ('cmd /c %_USBIP% list -r %CFG_REMOTE% ^| f
   set _ID=%%j
   goto check
 )
+echo Error: %CFG_REMOTE%	%CFG_ATTACH%: is UNAVAILABLE. It may be offline, unplugged, or already occupied by another attachment!
+goto :EOF
+
 :check
 %_USBIP% list -l | find "%_ID%"
 if errorlevel 1 (

@@ -1,1 +1,3 @@
-usbip.conf
+*.conf_new
+*.log
+*.conf
