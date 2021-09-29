@@ -1,7 +1,7 @@
 @echo off
 pushd "%~dp0" && net sess 1>nul 2>nul || (powershell -ex unrestricted -Command "Start-Process -Verb RunAs -FilePath '%comspec%' -ArgumentList '/c \"%~f0\" %*'" >nul 2>nul & exit /b 1)
 
-call :ask "Do you want to uninstall USPIP service, driver and sertificate? (y/N)" n
+call :ask "Do you want to uninstall USBIP service, driver and sertificate? (y/N)" n
 if /i "%_ANSWER%" == "n" goto :EOF
 
 if not defined _PARSING call "%~dp0parse_config.cmd"
