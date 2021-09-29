@@ -5,8 +5,8 @@ set _CONF=usbip.conf
 set _CONF_FILE="%~dp0%_CONF%"
 set _CONF_NEW="%~dp0%_CONF%_new"
 set _SVCCTL="%~dp0nssm.exe"
-set _USPIP_EXE="%~dp0usbip.exe"
-set _USPIP_CERT="%~dp0usbip_test.pfx"
+set _USBIP_EXE="%~dp0usbip.exe"
+set _USBIP_CERT="%~dp0usbip_test.pfx"
 set _CERTMGR="%~dp0certmgr.exe"
 
 echo Looking for the config...
@@ -21,7 +21,7 @@ if not exist %_CONF_FILE% (
 echo Found existing "%_CONF%".
 call :general_config
 if defined _NEED_CONFIG goto do_config
-call :ask "Do you want to rewise it? (y/N)" n
+call :ask "Do you want to revise it? (y/N)" n
 if /i "%_ANSWER%" == "y" set _NEED_CONFIG=1
 
 :do_config
@@ -41,7 +41,7 @@ if errorlevel 1 (
   echo Try to install the certificate and the driver manually.
   pause
   explorer /select,"%~dp0usbip_vhci%_UDE%.inf"
-  explorer /select,%_USPIP_CERT%
+  explorer /select,%_USBIP_CERT%
 ) else (
   echo Done. You now must have everything working. Press any key to exit.
   pause
@@ -145,7 +145,7 @@ if not defined _FOUND_ATTACH (
 if /i "%_ANSWER%" == "n" goto :EOF
 
 echo Looking up for available devices...
-%_USPIP_EXE% list -r %_FOUND_REMOTE%
+%_USBIP_EXE% list -r %_FOUND_REMOTE%
 
 set /p _ANSWER="Type in the bus_id to add (usually looks like '1-1.4' or similar): "
 if /i not "%_ANSWER%" == "" (
@@ -164,8 +164,8 @@ goto :EOF
 :install_certificate
 call :ask "Install the test certificate for the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
-%_CERTMGR% /add /all %_USPIP_CERT% /s /r localMachine ROOT
-%_CERTMGR% /add /all %_USPIP_CERT% /s /r localMachine TRUSTEDPUBLISHER
+%_CERTMGR% /add /all %_USBIP_CERT% /s /r localMachine ROOT
+%_CERTMGR% /add /all %_USBIP_CERT% /s /r localMachine TRUSTEDPUBLISHER
 if errorlevel 1 goto error
 goto :EOF
 
@@ -174,9 +174,9 @@ call :ask "Install the driver? (Y/n)" y
 if /i "%_ANSWER%" == "n" goto :EOF
 echo Installing the drivers...
 if %_UDE% == 1 (
-  %_USPIP_EXE% install -u %_UDE%
+  %_USBIP_EXE% install -u %_UDE%
 ) else (
-  %_USPIP_EXE% install -w %_UDE%
+  %_USBIP_EXE% install -w %_UDE%
 )
 if errorlevel 1 goto error
 goto :EOF
